@@ -23,7 +23,6 @@ https://huggingface.co/models?filter=text-generation
 # You can also adapt this script on your own causal language modeling task. Pointers for this are left as comments.
 
 import argparse
-import json
 import logging
 import math
 import os
@@ -42,7 +41,6 @@ from accelerate import Accelerator, DistributedType, DeepSpeedPlugin
 from accelerate.logging import get_logger
 from accelerate.utils import set_seed
 from huggingface_hub import Repository
-import deepspeed
 import time
 from transformers import (
     CONFIG_MAPPING,
@@ -58,7 +56,9 @@ from transformers import (
 )
 from transformers.utils import get_full_repo_name
 from transformers.utils.versions import require_version
+import torch.distributed as dist
 
+from utils import memory_cap
 
 logger = get_logger(__name__)
 
@@ -224,6 +224,9 @@ def parse_args():
             "Only applicable when `--with_tracking` is passed."
         ),
     )
+    parser.add_argument(
+        "--mem_cap", type=int, default=0, help="use mem cap"
+    )
     args = parser.parse_args()
 
     # Sanity checks
@@ -263,6 +266,10 @@ def main():
         level=logging.INFO,
     )
     logger.info(accelerator.state, main_process_only=False)
+
+    if args.mem_cap > 0:
+        memory_cap(args.mem_cap)
+
     if accelerator.is_local_main_process:
         datasets.utils.logging.set_verbosity_warning()
         transformers.utils.logging.set_verbosity_info()

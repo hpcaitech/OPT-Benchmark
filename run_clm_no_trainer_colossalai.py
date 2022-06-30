@@ -57,12 +57,21 @@ from colossalai.zero.init_ctx import ZeroInitContext
 from colossalai.zero.shard_utils import TensorShardStrategy
 from colossalai.nn.optimizer import FusedAdam, HybridAdam, CPUAdam
 from colossalai.utils import get_dataloader, get_current_device, colo_set_process_memory_fraction
+from colossalai.utils import colo_set_process_memory_fraction, colo_device_memory_capacity
+
 
 
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
 
 MODEL_CONFIG_CLASSES = list(MODEL_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
+
+def limit_cuda_memory(size_in_GB: int):
+    cuda_capacity = colo_device_memory_capacity(get_current_device())
+    if size_in_GB * (1024**3) < cuda_capacity:
+        colo_set_process_memory_fraction(size_in_GB * (1024**3) / cuda_capacity)
+        logger = get_dist_logger()
+        logger.info("Using {} GB of GPU memory".format(size_in_GB))
 
 def get_time_stamp():
     torch.cuda.synchronize()
@@ -226,6 +235,10 @@ def parse_args():
             "Only applicable when `--with_tracking` is passed."
         ),
     )
+
+    parser.add_argument(
+        "--with_mem_cap", type=bool, default=True, help="use half cpu memory capacity"
+    )
     args = parser.parse_args()
 
     # Sanity checks
@@ -259,6 +272,8 @@ def main():
     else:
         datasets.utils.logging.set_verbosity_error()
         transformers.utils.logging.set_verbosity_error()
+    if args.with_mem_cap:
+        limit_cuda_memory(40)
 
     # If passed along, set the training seed now.
     if args.seed is not None:
