@@ -59,6 +59,7 @@ from colossalai.nn.optimizer import FusedAdam, HybridAdam, CPUAdam
 from colossalai.utils import get_dataloader, get_current_device, colo_set_process_memory_fraction
 from colossalai.utils import colo_set_process_memory_fraction, colo_device_memory_capacity
 
+from utils import memory_cap
 
 
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
@@ -237,7 +238,7 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--with_mem_cap", type=bool, default=True, help="use half cpu memory capacity"
+        "--mem_cap", type=int, default=0, help="use mem cap"
     )
     args = parser.parse_args()
 
@@ -272,8 +273,9 @@ def main():
     else:
         datasets.utils.logging.set_verbosity_error()
         transformers.utils.logging.set_verbosity_error()
-    if args.with_mem_cap:
-        limit_cuda_memory(40)
+
+    if args.mem_cap > 0:
+        memory_cap(args.mem_cap)
 
     # If passed along, set the training seed now.
     if args.seed is not None:
