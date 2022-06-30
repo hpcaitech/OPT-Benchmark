@@ -1,5 +1,5 @@
-export BS=32
-colossalai run --nproc_per_node 1 \
+export BS=16
+env PYTORCH_NO_CUDA_MEMORY_CACHING=1 colossalai run --nproc_per_node 1 \
     --master_port 29600 \
     run_clm_no_trainer_colossalai.py \
     --dataset_name wikitext \
