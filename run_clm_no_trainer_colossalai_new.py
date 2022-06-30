@@ -80,11 +80,6 @@ def get_time_stamp():
     torch.cuda.synchronize()
     return time.time()
 
-def limit_cuda_memory(memory_in_g: float):
-    cuda_capacity = torch.cuda.get_device_properties(get_current_device()).total_memory
-    fraction = (memory_in_g * 1024**3) / cuda_capacity
-    colo_set_process_memory_fraction(fraction)
-
 def parse_args():
     parser = colossalai.get_default_parser()
     parser.add_argument(

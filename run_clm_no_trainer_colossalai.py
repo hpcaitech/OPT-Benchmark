@@ -67,22 +67,10 @@ require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/lang
 MODEL_CONFIG_CLASSES = list(MODEL_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
-def limit_cuda_memory(size_in_GB: int):
-    cuda_capacity = colo_device_memory_capacity(get_current_device())
-    if size_in_GB * (1024**3) < cuda_capacity:
-        colo_set_process_memory_fraction(size_in_GB * (1024**3) / cuda_capacity)
-        logger = get_dist_logger()
-        logger.info("Using {} GB of GPU memory".format(size_in_GB))
-
 def get_time_stamp():
     torch.cuda.synchronize()
     return time.time()
-
-def limit_cuda_memory(memory_in_g: float):
-    cuda_capacity = torch.cuda.get_device_properties(get_current_device()).total_memory
-    fraction = (memory_in_g * 1024**3) / cuda_capacity
-    colo_set_process_memory_fraction(fraction)
-
+    
 def parse_args():
     parser = colossalai.get_default_parser()
     parser.add_argument(
