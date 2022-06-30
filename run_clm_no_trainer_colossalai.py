@@ -523,6 +523,9 @@ def main():
 
     for epoch in range(starting_epoch, args.num_train_epochs):
         model.train()
+        max_gpu_allocated = torch.cuda.max_memory_allocated() / 1024 ** 3
+        max_gpu_reserved = torch.cuda.max_memory_reserved() / 1024 ** 3
+        logger.info(f'before epoch max gpu allocated: {max_gpu_allocated} GB, max gpu reserved: {max_gpu_reserved} GB')
         for step, batch in enumerate(train_dataloader):
             batch = {k: v.cuda() for k, v in batch.items()}
 
