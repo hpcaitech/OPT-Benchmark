@@ -59,7 +59,7 @@ from colossalai.nn.optimizer import FusedAdam, HybridAdam, CPUAdam
 from colossalai.utils import get_dataloader, get_current_device, colo_set_process_memory_fraction
 from colossalai.utils import colo_set_process_memory_fraction, colo_device_memory_capacity
 
-from utils import memory_cap
+from utils import colo_memor_cap
 
 
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
@@ -263,7 +263,7 @@ def main():
         transformers.utils.logging.set_verbosity_error()
 
     if args.mem_cap > 0:
-        memory_cap(args.mem_cap)
+        colo_memor_cap(args.mem_cap)
 
     # If passed along, set the training seed now.
     if args.seed is not None:
@@ -353,16 +353,22 @@ def main():
 
     if args.model_name_or_path:
         shard_strategy = TensorShardStrategy()
-        with ZeroInitContext(target_device=get_current_device(), shard_strategy=shard_strategy,
+        with ZeroInitContext(target_device=get_current_device(), 
+                             shard_strategy=shard_strategy,
                              shard_param=True):
-            model = OPTForCausalLM.from_pretrained(
-                args.model_name_or_path,
-                from_tf=bool(".ckpt" in args.model_name_or_path),
-                config=config,
-                local_files_only=False
-            )
-        
+            # model = OPTForCausalLM.from_pretrained(
+            #     args.model_name_or_path,
+            #     from_tf=bool(".ckpt" in args.model_name_or_path),
+            #     config=config,
+            #     local_files_only=False
+            # )
+            model = OPTForCausalLM(config = config)
         model.gradient_checkpointing_enable()
+
+        max_gpu_allocated = torch.cuda.max_memory_allocated() / 1024 ** 3
+        max_gpu_reserved = torch.cuda.max_memory_reserved() / 1024 ** 3
+        logger.info(f'after initial model max gpu allocated: {max_gpu_allocated} GB, ' \
+            'max gpu reserved: {max_gpu_reserved} GB')
     else:
         logger.info("Training new model from scratch")
         model = OPTForCausalLM.from_config(config, local_files_only=True)
@@ -538,7 +544,6 @@ def main():
                 engine.zero_grad()
                 progress_bar.update(1)
                 completed_steps += 1
-            
             
 
             max_gpu_allocated = torch.cuda.max_memory_allocated() / 1024 ** 3
