@@ -62,6 +62,7 @@ from colossalai.utils import colo_set_process_memory_fraction, colo_device_memor
 from utils import colo_memory_cap
 
 
+
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
 
 MODEL_CONFIG_CLASSES = list(MODEL_MAPPING.keys())
@@ -265,6 +266,7 @@ def main():
     if args.mem_cap > 0:
         colo_memory_cap(args.mem_cap)
 
+
     # If passed along, set the training seed now.
     if args.seed is not None:
         set_seed(args.seed)
@@ -363,7 +365,12 @@ def main():
             #     local_files_only=False
             # )
             model = OPTForCausalLM(config = config)
+        model.gradient_checkpointing_enable()
 
+        max_gpu_allocated = torch.cuda.max_memory_allocated() / 1024 ** 3
+        max_gpu_reserved = torch.cuda.max_memory_reserved() / 1024 ** 3
+        logger.info(f'after initial model max gpu allocated: {max_gpu_allocated} GB, ' \
+            'max gpu reserved: {max_gpu_reserved} GB')
     else:
         logger.info("Training new model from scratch")
         model = OPTForCausalLM.from_config(config, local_files_only=True)
