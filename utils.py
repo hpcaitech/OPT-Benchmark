@@ -16,7 +16,7 @@ def memory_cap(size_in_GB):
     torch.cuda.set_per_process_memory_fraction(fraction, local_rank)
 
 
-def colo_memor_cap(size_in_GB):
+def colo_memory_cap(size_in_GB):
     from colossalai.utils import colo_set_process_memory_fraction, colo_device_memory_capacity
     from colossalai.utils import get_current_device
     cuda_capacity = colo_device_memory_capacity(get_current_device())

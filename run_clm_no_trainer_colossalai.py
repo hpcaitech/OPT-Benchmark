@@ -59,7 +59,8 @@ from colossalai.nn.optimizer import FusedAdam, HybridAdam, CPUAdam
 from colossalai.utils import get_dataloader, get_current_device, colo_set_process_memory_fraction
 from colossalai.utils import colo_set_process_memory_fraction, colo_device_memory_capacity
 
-from utils import colo_memor_cap
+from utils import colo_memory_cap
+
 
 
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
@@ -263,7 +264,8 @@ def main():
         transformers.utils.logging.set_verbosity_error()
 
     if args.mem_cap > 0:
-        colo_memor_cap(args.mem_cap)
+        colo_memory_cap(args.mem_cap)
+
 
     # If passed along, set the training seed now.
     if args.seed is not None:
@@ -372,6 +374,8 @@ def main():
     else:
         logger.info("Training new model from scratch")
         model = OPTForCausalLM.from_config(config, local_files_only=True)
+    
+    model.gradient_checkpointing_enable()
 
     # model.resize_token_embeddings(len(tokenizer))
 
@@ -552,13 +556,13 @@ def main():
 
             global_step += 1
 
-            if global_step == 20:
+            if global_step == 10:
                 start_time = get_time_stamp()
 
-            if global_step == 40:
+            if global_step == 20:
                 end_time = get_time_stamp()
                 time_elapsed = end_time - start_time
-                logger.info(f'step time = {time_elapsed/20} s')
+                logger.info(f'step time = {time_elapsed/10} s')
                 exit(-1)
 
             # if isinstance(checkpointing_steps, int):
