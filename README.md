@@ -1,6 +1,6 @@
 # OPT-Benchmark
 
-This benchmark is to compare the performance of Colossal-AI and DeepSpeed in terms of its zero redundancy optimizer and offloading.
+This benchmark is to compare the performance of Colossal-AI and DeepSpeed in terms of its zero redundancy optimizer and offloading. The script is adapted from the Hugging Face [example](https://github.com/huggingface/transformers/tree/main/examples/pytorch/language-modeling).
 
 
 ## Run Benchmarking
