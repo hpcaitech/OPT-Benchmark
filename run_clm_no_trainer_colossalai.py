@@ -251,9 +251,9 @@ def parse_args():
 def main():
     args = parse_args()
 
-    colossalai.launch_from_torch(config='./colossalai_zero.py')
-
+    colossalai.launch_from_torch(config='./colossalai_zero.py', verbose=True)
     logger = get_dist_logger()
+    logger.info("logger is created")
     is_main_process = gpc.get_local_rank(ParallelMode.DATA) == 0
 
     if is_main_process:
@@ -286,6 +286,7 @@ def main():
     # In distributed training, the load_dataset function guarantee that only one local process can concurrently
     # download the dataset.
     if args.dataset_name is not None:
+        logger.info(f"loading {args.dataset_name}")
         # Downloading and loading a dataset from the hub.
         raw_datasets = load_dataset(args.dataset_name, args.dataset_config_name)
         if "validation" not in raw_datasets.keys():
@@ -326,6 +327,8 @@ def main():
                 **dataset_args,
             )
 
+    logger.info("dataset is loaded")
+
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
@@ -358,12 +361,7 @@ def main():
         with ZeroInitContext(target_device=get_current_device(), 
                              shard_strategy=shard_strategy,
                              shard_param=True):
-            # model = OPTForCausalLM.from_pretrained(
-            #     args.model_name_or_path,
-            #     from_tf=bool(".ckpt" in args.model_name_or_path),
-            #     config=config,
-            #     local_files_only=False
-            # )
+            # we do not use from_pretrained as it is too slow
             model = OPTForCausalLM(config = config)
         model.gradient_checkpointing_enable()
 

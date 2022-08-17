@@ -252,8 +252,9 @@ def main():
     # Initialize the accelerator. We will let the accelerator handle device placement for us in this example.
     # If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
     # in the environment
-    deepspeed_plugin = DeepSpeedPlugin(zero_stage=3, offload_optimizer_device='cpu', offload_param_device='cpu')
+    # deepspeed_plugin = DeepSpeedPlugin(zero_stage=3, offload_optimizer_device='cpu', offload_param_device='cpu')
     # deepspeed_plugin = DeepSpeedPlugin(zero_stage=3)
+    deepspeed_plugin = DeepSpeedPlugin(hf_ds_config='./zero_config.json')
     total_bs = args.per_device_train_batch_size * int(os.environ['WORLD_SIZE'])
     deepspeed_plugin.deepspeed_config['train_batch_size'] = total_bs
     deepspeed_plugin.deepspeed_config['train_micro_batch_size_per_gpu'] = args.per_device_train_batch_size
@@ -376,18 +377,9 @@ def main():
             "You can do it from another script, save it, and load it from here, using --tokenizer_name."
         )
 
-    if args.model_name_or_path:
-        # with deepspeed.zero.Init():
-        #     model = OPTForCausalLM(config=config)
-        model = OPTForCausalLM.from_pretrained(
-            args.model_name_or_path,
-            from_tf=bool(".ckpt" in args.model_name_or_path),
-            config=config,
-            local_files_only=False
+    model = OPTForCausalLM(
+            config=config
         )
-    else:
-        logger.info("Training new model from scratch")
-        model = OPTForCausalLM.from_config(config, local_files_only=False)
 
     model.gradient_checkpointing_enable()
 
@@ -608,13 +600,13 @@ def main():
 
             global_step += 1
 
-            if global_step == 20:
+            if global_step == 10:
                 start_time = get_time_stamp()
 
-            if global_step == 40:
+            if global_step == 20:
                 end_time = get_time_stamp()
                 time_elapsed = end_time - start_time
-                logger.info(f'step time = {time_elapsed/20} s')
+                logger.info(f'step time = {time_elapsed/10} s')
                 exit(-1)
 
             # if isinstance(checkpointing_steps, int):

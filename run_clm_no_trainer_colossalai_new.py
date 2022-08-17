@@ -259,6 +259,7 @@ def main():
 
     logger = get_dist_logger()
     is_main_process = gpc.get_local_rank(ParallelMode.DATA) == 0
+    dp_size = gpc.get_world_size(ParallelMode.DATA)
 
     if is_main_process:
         datasets.utils.logging.set_verbosity_warning()
@@ -353,19 +354,15 @@ def main():
 
     if args.model_name_or_path:
         with ColoInitContext(device=torch.device('cpu')):
-            model = OPTForCausalLM.from_pretrained(
-                args.model_name_or_path,
-                from_tf=bool(".ckpt" in args.model_name_or_path),
-                config=config,
-                local_files_only=False
-            )
+            # we do not use from_pretrained as it is too slow
+            model = OPTForCausalLM(config=config)
         model.gradient_checkpointing_enable()
         model = model.half().cuda()
 
         chunk_size = ChunkManager.search_chunk_size(model, 2**32, 8)
         placement_policy = 'cpu'
         chunk_manager = ChunkManager(chunk_size,
-                                    enable_distributed_storage=False,
+                                    enable_distributed_storage=dp_size > 1,
                                     init_device=GeminiManager.get_default_device(placement_policy))
         gemini_manager = GeminiManager(placement_policy, chunk_manager)
         model = ZeroDDP(model, gemini_manager)

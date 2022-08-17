@@ -1,7 +1,7 @@
-export BS=${BS:-16}
-export MEMCAP=${MEMCAP:-40}
-export MODEL=${MODEL:-"6.7b"}
-export GPUNUM=${GPUNUM:-1}
+export BS=${BS:-32}
+export MEMCAP=${MEMCAP:-0}
+export MODEL=${MODEL:-"13b"}
+export GPUNUM=${GPUNUM:-8}
 
 torchrun --nproc_per_node ${GPUNUM} \
     --standalone \
