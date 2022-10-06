@@ -69,6 +69,7 @@ from colossalai.gemini.gemini_mgr import GeminiManager
 from colossalai.gemini import ChunkManager
 from colossalai.nn.parallel import ZeroDDP
 from colossalai.zero import ZeroOptimizer
+from utils import colo_memory_cap
 
 
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
@@ -233,6 +234,12 @@ def parse_args():
             "Only applicable when `--with_tracking` is passed."
         ),
     )
+    parser.add_argument(
+        "--mem_cap", type=int, default=0, help="use mem cap"
+    )
+    parser.add_argument(
+        '--policy', type=str, help='tensor placement policy', choices=['cuda', 'auto', 'cpu']
+    )
     args = parser.parse_args()
 
     # Sanity checks
@@ -267,6 +274,9 @@ def main():
     else:
         datasets.utils.logging.set_verbosity_error()
         transformers.utils.logging.set_verbosity_error()
+
+    if args.mem_cap > 0:
+        colo_memory_cap(args.mem_cap)
 
     # If passed along, set the training seed now.
     if args.seed is not None:
@@ -360,7 +370,7 @@ def main():
         model = model.half().cuda()
 
         chunk_size = ChunkManager.search_chunk_size(model, 2**32, 8)
-        placement_policy = 'cpu'
+        placement_policy = args.policy
         chunk_manager = ChunkManager(chunk_size,
                                     enable_distributed_storage=dp_size > 1,
                                     init_device=GeminiManager.get_default_device(placement_policy))
@@ -470,8 +480,13 @@ def main():
             "weight_decay": 0.0,
         },
     ]
-    # optimizer = FusedAdam(optimizer_grouped_parameters, lr=args.learning_rate)
-    optimizer = CPUAdam(optimizer_grouped_parameters, lr=args.learning_rate)
+
+    if args.policy == 'cuda':
+        optimizer = FusedAdam(optimizer_grouped_parameters, lr=args.learning_rate)
+    elif args.policy == 'auto':
+        optimizer = HybridAdam(optimizer_grouped_parameters, lr=args.learning_rate)    
+    elif args.policy == 'cpu':
+        optimizer = CPUAdam(optimizer_grouped_parameters, lr=args.learning_rate)
 
     # optimizer = FusedAdam(optimizer_grouped_parameters, lr=args.learning_rate)
     optimizer = ZeroOptimizer(optimizer, model)
