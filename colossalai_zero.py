@@ -3,6 +3,8 @@ import os
 
 _policy = os.environ.get('TENSOR_PLACEMENT_POLICY', 'auto')
 
+# try to decrase warmup_non_model_data_ratio and gpu_margin_mem_ratio
+# if you encounter OOM error
 zero = dict(model_config=dict(shard_strategy=TensorShardStrategy(),
                               tensor_placement_policy=_policy,
                               reuse_fp16_shard=True,
